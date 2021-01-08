@@ -135,7 +135,7 @@ class SpotifyRecommendations(list):
         return results[0]['id']
 
     def similar(self, tracks, lib, limit=EXTEND_LIMIT):
-        ids = [self.resolve(t) for t in tracks if t]
+        ids = [i for i in map(self.resolve, tracks) if i]
         if not ids:
             return []
         recs = self.spotify.recommendations(seed_tracks=ids,
