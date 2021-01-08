@@ -21,7 +21,7 @@ limit = 30 # increase if you have trouble finding local files matching recommend
 
 [mpd]
 host = localhost # default
-port = 66000 # default
+port = 6600 # default
 password = music # optional
 
 [playlist]
