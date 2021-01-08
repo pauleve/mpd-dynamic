@@ -89,7 +89,10 @@ class MPDProxy(object):
         Calculates the number of songs remanining on current playlist
         """
         status = self.mpd.status()
-        i = int(status.get('song', 0))
+        try:
+            i = int(status.get('song', 0))
+        except ValueError:
+            return THRESHOLD # wait
         return int(status['playlistlength']) - i
 
     def add_track(self, track):
@@ -156,7 +159,7 @@ class SpotifyRecommendations(list):
         if selected:
             return selected
 
-        logging.info("No local tracks matching recommendations, falling back to artists")
+        logging.info("No local tracks matching recommendations for {tracks}, falling back to artists")
 
         # 2. fallback to artists
         for track in recs:
