@@ -10,7 +10,7 @@ pip install https://github.com/pauleve/mpd-dynamic/archive/main.zip
 
 ## Configuration
 
-You will need to register your app at Spotify Dashboard to get the credentials necessary to make authorized calls (a client id and client secret).
+You will need to register your app at Spotify [Development Dashboard](https://developer.spotify.com/dashboard/applications) to get the credentials necessary to make authorized calls (a client id and client secret).
 
 Then, create a file `~/.config/mpd_dynamicrc`:
 ```cfg
