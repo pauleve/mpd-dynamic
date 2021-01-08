@@ -121,12 +121,14 @@ class SpotifyRecommendations(list):
         creds = spotipy.SpotifyClientCredentials(SPOTIFY_ID, SPOTIFY_SECRET)
         self.spotify = spotipy.Spotify(client_credentials_manager=creds)
         self.history = set() # unbounded history, else []
+        self.market = config["spotify"].get("market")
 
     def resolve(self, track):
         artist = track.artist.replace("-"," ")
         title = track.title.replace("-"," ")
         query = f"artist:\"{artist}\" {title}"
-        results = self.spotify.search(q=query, type='track')
+        results = self.spotify.search(q=query, type='track', limit=1,
+                    market=self.market)
         results = results['tracks']['items']
         if not results:
             logging.warn(f"No spotify track for {track} (query was: {query})")

@@ -18,6 +18,7 @@ Then, create a file `~/.config/mpd_dynamicrc`:
 id = xxxx  # client id
 secret = xxx # client secret
 limit = 30 # increase if you have trouble finding local files matching recommendations
+market = FR # optional, see https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
 
 [mpd]
 host = localhost # default
