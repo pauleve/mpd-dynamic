@@ -143,6 +143,7 @@ class SpotifyRecommendations(list):
         recs = self.spotify.recommendations(seed_tracks=ids,
                     limit=LOOKUP_WINDOW)['tracks']
         recs = list(map(Track.from_spotify, recs))
+        random.shuffle(recs)
 
         selected = []
 
