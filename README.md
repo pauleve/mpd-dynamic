@@ -30,6 +30,12 @@ threshold = 10 # if the remaining number of tracks is less than threshold, it wi
 extend = 3 # how many tracks to add (maximum)
 ```
 
+### Artist blacklist
+
+Artists to blacklist have to be specified in the `~/.config/mpd_dynamic-blacklist.txt` file, with one artist per line.
+The content of the file is regularly reloaded, so there is no need to restart
+the program.
+
 ## Usage
 
 Simply launch the command

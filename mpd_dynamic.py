@@ -27,6 +27,23 @@ LOOKUP_WINDOW = EXTEND_LIMIT*10
 if "spotify" in config:
     LOOKUP_WINDOW = config["spotify"].getint("limit", LOOKUP_WINDOW)
 
+BLACKLIST_FILE = os.path.join(user_config_dir(), "mpd_dynamic-blacklist.txt")
+
+class ArtistBlacklist(set):
+    def __init__(self):
+        self.reload()
+
+    def __contains__(self, track):
+        return super().__contains__(track.artist)
+
+    def reload(self):
+        self.clear()
+        try:
+            with open(BLACKLIST_FILE) as fp:
+                self.update([l.strip() for l in fp])
+        except FileNotFoundError:
+            pass
+
 class Track:
     def __init__(self, title, artist, album, id=None):
         self.title = title
@@ -130,12 +147,13 @@ class UnboundedHistory(set):
         return self._view_track(track) in self
 
 class SpotifyRecommendations(object):
-    def __init__(self, history):
+    def __init__(self, history, blacklist):
         SPOTIFY_ID = config["spotify"]["id"]
         SPOTIFY_SECRET = config["spotify"]["secret"]
         creds = spotipy.SpotifyClientCredentials(SPOTIFY_ID, SPOTIFY_SECRET)
         self.spotify = spotipy.Spotify(client_credentials_manager=creds)
         self.history = history
+        self.blacklist = blacklist
         self.market = config["spotify"].get("market")
 
     def resolve(self, track):
@@ -172,7 +190,8 @@ class SpotifyRecommendations(object):
             return len(selected) == limit
 
         # 1. prefer new specific tracks
-        recs0 = [t for t in recs if not self.history.has_track(t)]
+        recs0 = [t for t in recs if not self.history.has_track(t) \
+                                and not t in self.blacklist]
         for track in recs0:
             mtrack = lib.matching_track(track)
             if mtrack:
@@ -186,7 +205,7 @@ class SpotifyRecommendations(object):
         # 2. fallback to artists
         for track in recs:
             mtrack = lib.random_track(track.artist)
-            if mtrack:
+            if mtrack and mtrack not in self.blacklist:
                 if pick(track, mtrack):
                     break
 
@@ -196,8 +215,9 @@ class SpotifyRecommendations(object):
         return selected
 
 class LastFMRecommendations(object):
-    def __init__(self, history):
+    def __init__(self, history, blacklist):
         self.history = history
+        self.blacklist = blacklist
 
         LASTFM_API_KEY = "5a854b839b10f8d46e630e8287c2299b";
         self.session = requests.Session()
@@ -219,6 +239,8 @@ class LastFMRecommendations(object):
                 if lib.has_artist(artist):
                     for i in range(5):
                         track = lib.random_track(artist)
+                        if track in self.blacklist:
+                            continue
                         if not self.history.has_track(track):
                             self.history.add_track(track)
                             selected.append(track)
@@ -230,11 +252,12 @@ class LastFMRecommendations(object):
 def main():
     random.seed()
     lib = MPDProxy()
+    blacklist = ArtistBlacklist()
     hist = UnboundedHistory()
     for track in lib.mpd.playlistinfo():
         hist.add_track(Track.from_mpd(track))
-    feed1 = SpotifyRecommendations(hist)
-    feed2 = LastFMRecommendations(hist)
+    feed1 = SpotifyRecommendations(hist, blacklist)
+    feed2 = LastFMRecommendations(hist, blacklist)
     ratio1 = 2/3
     try:
         while True:
@@ -243,10 +266,13 @@ def main():
                 tracks = [lib.currentsong()]
                 if None not in tracks:
                     extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
+                    blacklist.reload()
                     ask1 = round(extend_by * ratio1 + 0.5)
                     sel1 = feed1.similar(tracks, lib, limit=ask1)
                     sel2 = feed2.similar(tracks, lib, limit=extend_by-len(sel1))
-                    for track in sel1+sel2:
+                    selected = sel1+sel2
+                    random.shuffle(selected)
+                    for track in selected:
                         lib.add_track(track)
             lib.mpd.idle('playlist', 'player')
     except KeyboardInterrupt:
