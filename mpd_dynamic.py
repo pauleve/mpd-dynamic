@@ -179,7 +179,7 @@ class SpotifyRecommendations(object):
         if selected:
             return selected
 
-        logging.info("No local tracks matching recommendations for {tracks}, falling back to artists")
+        logging.info(f"No local tracks matching recommendations for {tracks}, falling back to artists")
 
         # 2. fallback to artists
         for track in recs:
