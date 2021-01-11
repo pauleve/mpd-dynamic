@@ -126,10 +126,13 @@ class SpotifyRecommendations(list):
     def resolve(self, track):
         artist = track.artist.replace("-"," ")
         title = track.title.replace("-"," ")
-        query = f"artist:\"{artist}\" {title}"
-        results = self.spotify.search(q=query, type='track', limit=1,
-                    market=self.market)
-        results = results['tracks']['items']
+        for query in [f"artist:\"{artist}\" {title}",
+                f"{artist} {title}"]:
+            results = self.spotify.search(q=query, type='track', limit=1,
+                        market=self.market)
+            results = results['tracks']['items']
+            if results:
+                break
         if not results:
             logging.warn(f"No spotify track for {track} (query was: {query})")
             return
