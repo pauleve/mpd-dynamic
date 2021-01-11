@@ -36,6 +36,8 @@ class Track:
 
     def __str__(self):
         return f"{self.artist} - {self.title} ({self.album})"
+    def __repr__(self):
+        return f"{self.artist} - {self.title} ({self.album})"
 
     @classmethod
     def from_spotify(celf, track):
