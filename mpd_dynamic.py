@@ -230,7 +230,7 @@ def main():
     lib = MPDProxy()
     hist = UnboundedHistory()
     for track in lib.mpd.playlistinfo():
-        hist.add_track(track)
+        hist.add_track(Track.from_mpd(track))
     feed1 = SpotifyRecommendations(hist)
     feed2 = LastFMRecommendations(hist)
     ratio1 = 2/3
