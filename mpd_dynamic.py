@@ -210,18 +210,19 @@ class LastFMRecommendations(object):
             "limit": 50})
         ret = ret.json()
         artists = [d["name"] for d in ret["similarartists"]["artist"]]
-        random.shuffle(artists)
         selected = []
-        for artist in artists:
-            if lib.has_artist(artist):
-                for i in range(5):
-                    track = lib.random_track(artist)
-                    if not self.history.has_track(track):
-                        self.history.add_track(track)
-                        selected.append(track)
-                        break
-                if len(selected) == limit:
-                    break
+        for _ in range(limit):
+            random.shuffle(artists)
+            for artist in artists:
+                if lib.has_artist(artist):
+                    for i in range(5):
+                        track = lib.random_track(artist)
+                        if not self.history.has_track(track):
+                            self.history.add_track(track)
+                            selected.append(track)
+                            if len(selected) == limit:
+                                return selected
+                            break
         return selected
 
 def main():
