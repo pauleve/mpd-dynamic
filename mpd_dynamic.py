@@ -5,6 +5,8 @@ import os
 import random
 import socket
 
+import requests
+
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
@@ -108,19 +110,30 @@ class MPDProxy(object):
                 maches = matches0
             return random.choice(matches)
 
+    @auto_retry
+    def has_artist(self, artist):
+        return self.mpd.count("artist", artist)["songs"] > '0'
+
     def random_track(self, artist):
         matches = self.mpd.find("artist", artist)
         if matches:
             return Track.from_mpd(random.choice(matches))
 
+class UnboundedHistory(set):
+    def _view_track(self, track):
+        return (track.artist, track.title)
+    def add_track(self, track):
+        self.add(self._view_track(track))
+    def has_track(self, track):
+        return self._view_track(track) in self
 
-class SpotifyRecommendations(list):
-    def __init__(self):
+class SpotifyRecommendations(object):
+    def __init__(self, history):
         SPOTIFY_ID = config["spotify"]["id"]
         SPOTIFY_SECRET = config["spotify"]["secret"]
         creds = spotipy.SpotifyClientCredentials(SPOTIFY_ID, SPOTIFY_SECRET)
         self.spotify = spotipy.Spotify(client_credentials_manager=creds)
-        self.history = set() # unbounded history, else []
+        self.history = history
         self.market = config["spotify"].get("market")
 
     def resolve(self, track):
@@ -153,6 +166,7 @@ class SpotifyRecommendations(list):
         def pick(track, mtrack):
             selected.append(mtrack)
             self.history.add(track.id) # .insert(0, track.id)
+            self.history.add_track(track)
             return len(selected) == limit
 
         # 1. prefer new specific tracks
@@ -179,16 +193,55 @@ class SpotifyRecommendations(list):
 
         return selected
 
+class LastFMRecommendations(object):
+    def __init__(self, history):
+        self.history = history
+
+        LASTFM_API_KEY = "5a854b839b10f8d46e630e8287c2299b";
+        self.session = requests.Session()
+        self.session.params["api_key"] = LASTFM_API_KEY
+
+    def similar(self, tracks, lib, limit=EXTEND_LIMIT):
+        seed_artist = tracks[0].artist
+        ret = self.session.get("https://ws.audioscrobbler.com/2.0", params={
+            "method": "artist.getSimilar",
+            "artist": seed_artist,
+            "format": "json",
+            "limit": 50})
+        ret = ret.json()
+        artists = [d["name"] for d in ret["similarartists"]["artist"]]
+        random.shuffle(artists)
+        selected = []
+        for artist in artists:
+            if lib.has_artist(artist):
+                for i in range(5):
+                    track = lib.random_track(artist)
+                    if not self.history.has_track(track):
+                        self.history.add_track(track)
+                        selected.append(track)
+                        break
+                if len(selected) == limit:
+                    break
+        return selected
+
 def main():
     random.seed()
     lib = MPDProxy()
-    feed = SpotifyRecommendations()
+    hist = UnboundedHistory()
+    feed1 = SpotifyRecommendations(hist)
+    feed2 = LastFMRecommendations(hist)
+    ratio1 = 2/3
     try:
         while True:
-            if lib.count_songs_remaining() < THRESHOLD:
+            remaining = lib.count_songs_remaining()
+            if remaining < THRESHOLD:
                 tracks = [lib.currentsong()]
                 if None not in tracks:
-                    for track in feed.similar(tracks, lib):
+                    extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
+                    ask1 = round(extend_by * ratio1 + 0.5)
+                    sel1 = feed1.similar(tracks, lib, limit=ask1)
+                    sel2 = feed2.similar(tracks, lib, limit=extend_by-len(sel1))
+                    for track in sel1+sel2:
                         lib.add_track(track)
             lib.mpd.idle('playlist', 'player')
     except KeyboardInterrupt:

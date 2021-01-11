@@ -1,6 +1,6 @@
 # mpd-dynamic - Dynamic playlists for MPD using Spotify
 
-This script will auto-complete your MPD playlist using track recommendations from Spotify.
+This script will auto-complete your MPD playlist using track recommendations from Spotify and LastFM.
 
 ## Installation
 
