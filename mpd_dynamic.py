@@ -165,12 +165,12 @@ class SpotifyRecommendations(object):
 
         def pick(track, mtrack):
             selected.append(mtrack)
-            self.history.add(track.id) # .insert(0, track.id)
+            #self.history.add(track.id) # .insert(0, track.id)
             self.history.add_track(track)
             return len(selected) == limit
 
         # 1. prefer new specific tracks
-        recs0 = [t for t in recs if t.id not in self.history]
+        recs0 = [t for t in recs if not self.history.has_track(t)]
         for track in recs0:
             mtrack = lib.matching_track(track)
             if mtrack:
@@ -229,6 +229,8 @@ def main():
     random.seed()
     lib = MPDProxy()
     hist = UnboundedHistory()
+    for track in lib.mpd.playlistinfo():
+        hist.add_track(track)
     feed1 = SpotifyRecommendations(hist)
     feed2 = LastFMRecommendations(hist)
     ratio1 = 2/3
