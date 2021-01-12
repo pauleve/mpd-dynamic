@@ -50,9 +50,12 @@ class Track:
         self.artist = artist
         self.album = album
         self.id = id
+        self.suggested_by = None
 
     def __str__(self):
-        return f"{self.artist} - {self.title} ({self.album})"
+        extra = f" [suggested by {self.suggested_by}]" \
+                    if self.suggested_by else ""
+        return f"{self.artist} - {self.title} ({self.album}){extra}"
     def __repr__(self):
         return f"{self.artist} - {self.title} ({self.album})"
 
@@ -184,6 +187,7 @@ class SpotifyRecommendations(object):
         selected = []
 
         def pick(track, mtrack):
+            mtrack.suggested_by = "Spotify"
             selected.append(mtrack)
             #self.history.add(track.id) # .insert(0, track.id)
             self.history.add_track(track)
@@ -243,11 +247,21 @@ class LastFMRecommendations(object):
                             continue
                         if not self.history.has_track(track):
                             self.history.add_track(track)
+                            track.suggested_by = "Last FM"
                             selected.append(track)
                             if len(selected) == limit:
                                 return selected
                             break
         return selected
+
+
+def get_probs():
+    weight = {"spotify": 2, "lastfm": 1}
+    for key in weight:
+        if key in config:
+            weight[key] = config[key].get("weight", weight[key])
+    total = sum(weight.values())
+    return {key: val/total for key, val in weight.items()}
 
 def main():
     random.seed()
@@ -258,7 +272,7 @@ def main():
         hist.add_track(Track.from_mpd(track))
     feed1 = SpotifyRecommendations(hist, blacklist)
     feed2 = LastFMRecommendations(hist, blacklist)
-    ratio1 = 2/3
+    probs = get_probs()
     try:
         while True:
             remaining = lib.count_songs_remaining()
@@ -267,7 +281,7 @@ def main():
                 if None not in tracks:
                     extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
                     blacklist.reload()
-                    ask1 = round(extend_by * ratio1 + 0.5)
+                    ask1 = round(extend_by * probs["spotify"] + 0.5)
                     sel1 = feed1.similar(tracks, lib, limit=ask1)
                     sel2 = feed2.similar(tracks, lib, limit=extend_by-len(sel1))
                     selected = sel1+sel2

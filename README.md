@@ -19,6 +19,10 @@ id = xxxx  # client id
 secret = xxx # client secret
 limit = 30 # increase if you have trouble finding local files matching recommendations
 market = FR # optional, see https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+weight = 2 # default; at most weight/total_weight of added tracks will come from Spotify
+
+[lastfm]
+weight = 1 # default; at most weight/total_weight of added tracks will come from LastFM
 
 [mpd]
 host = localhost # default
@@ -26,8 +30,8 @@ port = 6600 # default
 password = music # optional
 
 [playlist]
-threshold = 10 # if the remaining number of tracks is less than threshold, it will be completed
-extend = 3 # how many tracks to add (maximum)
+threshold = 10 # if the remaining number of tracks is less than threshold, it will trigger recommendations
+extend = 3 # how many recommended tracks to add (maximum)
 ```
 
 ### Artist blacklist
