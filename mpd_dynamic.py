@@ -3,6 +3,7 @@ import mpd
 import spotipy
 import os
 import random
+import re
 import socket
 
 import requests
@@ -162,8 +163,12 @@ class SpotifyRecommendations(object):
     def resolve(self, track):
         artist = track.artist.replace("-"," ")
         title = track.title.replace("-"," ")
-        for query in [f"artist:\"{artist}\" {title}",
-                f"{artist} {title}"]:
+        simple_title = re.sub(r"\(.*\)", "", title).strip()
+        queries = [f"artist:\"{artist}\" {title}",
+                f"{artist} {title}"]
+        if simple_title != title:
+            queries.append(f"{artist} {simple_title}")
+        for query in queries:
             results = self.spotify.search(q=query, type='track', limit=1,
                         market=self.market)
             results = results['tracks']['items']
