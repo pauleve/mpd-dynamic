@@ -27,10 +27,10 @@ LOOKUP_WINDOW = EXTEND_LIMIT*10
 if "spotify" in config:
     LOOKUP_WINDOW = config["spotify"].getint("limit", LOOKUP_WINDOW)
 
-BLACKLIST_FILE = os.path.join(user_config_dir(), "mpd_dynamic-blacklist.txt")
 
 class ArtistBlacklist(set):
     def __init__(self):
+        self.filename = os.path.join(user_config_dir(), "mpd_dynamic-blacklist.txt")
         self.reload()
 
     def __contains__(self, track):
@@ -39,12 +39,12 @@ class ArtistBlacklist(set):
     def reload(self):
         self.clear()
         try:
-            with open(BLACKLIST_FILE) as fp:
+            with open(self.filename) as fp:
                 self.update([l.strip() for l in fp])
         except FileNotFoundError:
             pass
 
-class Track:
+class Track(object):
     def __init__(self, title, artist, album, id=None):
         self.title = title
         self.artist = artist
@@ -247,7 +247,7 @@ class LastFMRecommendations(object):
                             continue
                         if not self.history.has_track(track):
                             self.history.add_track(track)
-                            track.suggested_by = "Last FM"
+                            track.suggested_by = "LastFM"
                             selected.append(track)
                             if len(selected) == limit:
                                 return selected
@@ -278,16 +278,20 @@ def main():
             remaining = lib.count_songs_remaining()
             if remaining < THRESHOLD:
                 tracks = [lib.currentsong()]
-                if None not in tracks:
-                    extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
-                    blacklist.reload()
-                    ask1 = round(extend_by * probs["spotify"] + 0.5)
-                    sel1 = feed1.similar(tracks, lib, limit=ask1)
-                    sel2 = feed2.similar(tracks, lib, limit=extend_by-len(sel1))
-                    selected = sel1+sel2
-                    random.shuffle(selected)
-                    for track in selected:
-                        lib.add_track(track)
+                if None in tracks:
+                    continue
+                extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
+                blacklist.reload()
+                selected = []
+                limit = round(extend_by * probs["spotify"] + 0.5)
+                if limit > 0:
+                    selected = feed1.similar(tracks, lib, limit=limit)
+                limit = extend_by-len(selected)
+                if limit > 0:
+                    selected += feed2.similar(tracks, lib, limit=limit)
+                random.shuffle(selected)
+                for track in selected:
+                    lib.add_track(track)
             lib.mpd.idle('playlist', 'player')
     except KeyboardInterrupt:
         pass
