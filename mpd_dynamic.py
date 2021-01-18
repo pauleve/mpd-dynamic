@@ -191,6 +191,10 @@ class SpotifyRecommendations(object):
 
         selected = []
 
+        def valid_pick(t):
+            return not self.history.has_track(t)\
+                    and not t in self.blacklist
+
         def pick(track, mtrack):
             mtrack.suggested_by = "Spotify"
             selected.append(mtrack)
@@ -199,8 +203,7 @@ class SpotifyRecommendations(object):
             return len(selected) == limit
 
         # 1. prefer new specific tracks
-        recs0 = [t for t in recs if not self.history.has_track(t) \
-                                and not t in self.blacklist]
+        recs0 = [t for t in recs if valid_pick(t)]
         for track in recs0:
             mtrack = lib.matching_track(track)
             if mtrack:
@@ -214,7 +217,7 @@ class SpotifyRecommendations(object):
         # 2. fallback to artists
         for track in recs:
             mtrack = lib.random_track(track.artist)
-            if mtrack and mtrack not in self.blacklist:
+            if mtrack and valid_pick(mtrack):
                 if pick(track, mtrack):
                     break
 
