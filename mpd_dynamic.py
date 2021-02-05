@@ -90,8 +90,11 @@ class MPDProxy(object):
             self.mpd.password(password)
 
     def __del__(self):
-        self.mpd.close()
-        self.mpd.disconnect()
+        try:
+            self.mpd.close()
+            self.mpd.disconnect()
+        except mpd.base.ConnectionError:
+            pass
 
     def auto_retry(func):
         def do(self, *args, **kwargs):
@@ -125,8 +128,8 @@ class MPDProxy(object):
         self.mpd.add(track.id)
 
     def matching_track(self, track):
-        matches = [Track.from_mpd(t) for t in self.mpd.find("title", track.title)]
-        matches = [t for t in matches if t.artist == track.artist]
+        matches = self.mpd.search("title", track.title, "artist", track.artist)
+        matches = list(map(Track.from_mpd, matches))
         if matches:
             matches0 = [t for t in matches if t.album == track.album]
             if matches0:
@@ -209,6 +212,8 @@ class SpotifyRecommendations(object):
             if mtrack:
                 if pick(track, mtrack):
                     break
+            else:
+                logging.info(f"No local track for {track}")
         if selected:
             return selected
 
@@ -260,6 +265,8 @@ class LastFMRecommendations(object):
                             if len(selected) == limit:
                                 return selected
                             break
+                else:
+                    logging.info(f"No local artist {artist}")
         return selected
 
 
@@ -300,7 +307,10 @@ def main():
                 random.shuffle(selected)
                 for track in selected:
                     lib.add_track(track)
-            lib.mpd.idle('playlist', 'player')
+            try:
+                lib.mpd.idle('playlist', 'player')
+            except mpd.base.ConnectionError:
+                pass
     except KeyboardInterrupt:
         pass
 
