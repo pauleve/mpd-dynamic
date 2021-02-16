@@ -7,7 +7,7 @@ setup(name="mpd-dynamic",
     author_email = "loic.pauleve@labri.fr",
     url = "https://github.com/pauleve/mpd-dynamic",
     description = "Auto-populate MPD playlist using Spotify and LastFM",
-    packages = find_packages(),
+    py_modules = ["mpd_dynamic"],
     entry_points = {
         "console_scripts": [
             "mpd-dynamic = mpd_dynamic:main"
