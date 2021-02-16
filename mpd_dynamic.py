@@ -137,11 +137,8 @@ class MPDProxy(object):
             return random.choice(matches)
 
     @auto_retry
-    def has_artist(self, artist):
-        return self.mpd.count("artist", artist)["songs"] > '0'
-
     def random_track(self, artist):
-        matches = self.mpd.find("artist", artist)
+        matches = self.mpd.search("artist", artist)
         if matches:
             return Track.from_mpd(random.choice(matches))
 
@@ -248,25 +245,27 @@ class LastFMRecommendations(object):
             "format": "json",
             "limit": 50})
         ret = ret.json()
+        if "similarartists" not in ret:
+            return []
         artists = [d["name"] for d in ret["similarartists"]["artist"]]
         selected = []
         for _ in range(limit):
             random.shuffle(artists)
             for artist in artists:
-                if lib.has_artist(artist):
-                    for i in range(5):
-                        track = lib.random_track(artist)
-                        if track in self.blacklist:
-                            continue
-                        if not self.history.has_track(track):
-                            self.history.add_track(track)
-                            track.suggested_by = "LastFM"
-                            selected.append(track)
-                            if len(selected) == limit:
-                                return selected
-                            break
-                else:
-                    logging.info(f"No local artist {artist}")
+                for i in range(5):
+                    track = lib.random_track(artist)
+                    if not track:
+                        logging.info(f"No local artist {artist}")
+                        break
+                    if track in self.blacklist:
+                        continue
+                    if not self.history.has_track(track):
+                        self.history.add_track(track)
+                        track.suggested_by = "LastFM"
+                        selected.append(track)
+                        if len(selected) == limit:
+                            return selected
+                        break
         return selected
 
 
