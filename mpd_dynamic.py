@@ -67,7 +67,7 @@ class Track(object):
                 track["album"]["name"], track["id"])
     @classmethod
     def from_mpd(celf, track):
-        return celf(track["title"], track["artist"], track["album"],
+        return celf(track["title"], track["artist"], track.get("album"),
                     track["file"])
 
 class MPDProxy(object):
@@ -203,10 +203,9 @@ class SpotifyRecommendations(object):
             return len(selected) == limit
 
         # 1. prefer new specific tracks
-        recs0 = [t for t in recs if valid_pick(t)]
-        for track in recs0:
+        for track in recs:
             mtrack = lib.matching_track(track)
-            if mtrack:
+            if mtrack and valid_pick(mtrack):
                 if pick(track, mtrack):
                     break
             else:
