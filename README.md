@@ -15,23 +15,30 @@ You will need to register your app at Spotify [Development Dashboard](https://de
 Then, create a file `~/.config/mpd_dynamicrc`:
 ```cfg
 [spotify]
-id = xxxx  # client id
-secret = xxx # client secret
-limit = 30 # increase if you have trouble finding local files matching recommendations
-market = FR # optional, see https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-weight = 2 # default; at most weight/total_weight of added tracks will come from Spotify
+id = xxxx
+secret = xxx
+# limit: number of results to fetch from spotify to find matching local files (increase if your library is small)
+limit = 30
+market = FR
+# market is optional, see https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+weight = 2
+# at most weight/total_weight of added tracks will come from Spotify
 
 [lastfm]
-weight = 1 # default; at most weight/total_weight of added tracks will come from LastFM
+weight = 1
+# at most weight/total_weight of added tracks will come from LastFM
 
 [mpd]
-host = localhost # default
-port = 6600 # default
-password = music # optional
+host = localhost
+port = 6600
+password = music
+# password is optional
 
 [playlist]
-threshold = 10 # if the remaining number of tracks is less than threshold, it will trigger recommendations
-extend = 3 # how many recommended tracks to add (maximum)
+# threshold: if the remaining number of tracks is less than threshold, it will trigger recommendations
+# extend: how many recommended tracks to add when there is less than {threshold} tracks in the playlist
+threshold = 10
+extend = 3
 ```
 
 ### Artist blacklist
