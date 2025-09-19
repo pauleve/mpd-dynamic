@@ -283,7 +283,7 @@ def main():
     hist = UnboundedHistory()
     for track in lib.mpd.playlistinfo():
         hist.add_track(Track.from_mpd(track))
-    feed1 = SpotifyRecommendations(hist, blacklist)
+    #feed1 = SpotifyRecommendations(hist, blacklist)
     feed2 = LastFMRecommendations(hist, blacklist)
     probs = get_probs()
     try:
@@ -296,9 +296,9 @@ def main():
                 extend_by = max(THRESHOLD-remaining, EXTEND_LIMIT)
                 blacklist.reload()
                 selected = []
-                limit = round(extend_by * probs["spotify"] + 0.5)
-                if limit > 0:
-                    selected = feed1.similar(tracks, lib, limit=limit)
+                #limit = round(extend_by * probs["spotify"] + 0.5)
+                #if limit > 0:
+                #    selected = feed1.similar(tracks, lib, limit=limit)
                 limit = extend_by-len(selected)
                 if limit > 0:
                     selected += feed2.similar(tracks, lib, limit=limit)
